@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pedido de Delivery</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #002a7b; /* Azul #002a7b */
+            margin: 20px;
+        }
+        h1 {
+            text-align: center;
+            color: white; /* Cor do texto do título */
+        }
+        form {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #222; /* Cinza escuro para o formulário */
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            color: white; /* Cor do texto em branco */
+        }
+        label {
+            font-weight: bold;
+            margin-top: 10px;
+            display: block;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #333; /* Cinza um pouco mais claro para contraste */
+            color: white;
+        }
+        .item-row {
+            display: flex;
+            gap: 10px;
+        }
+        .item-row select, .item-row input {
+            width: 32%;
+        }
+        .add-item {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        .taxa-fixa {
+            background-color: #333; /* Mesma cor do formulário */
+            border: none;
+            color: white;
+            font-weight: bold;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: #002a7b; /* Azul do fundo da página */
+            color: white;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #001e56; /* Azul mais escuro */
+        }
+    </style>
+    <script>
+        // ... (Seu JavaScript permanece o mesmo)
+    </script>
+</head>
+<body>
+    <h1>Pedido de Delivery</h1>
+    <form onsubmit="event.preventDefault(); enviarPedido();">
+        <label for="nome">Nome do Cliente:</label>
+        <input type="text" id="nome" name="nome" placeholder="Digite seu nome" required>
+        <label for="endereco">Endereço de Entrega:</label>
+        <input type="text" id="endereco" name="endereco" placeholder="Digite seu endereço" required>
+        <label>Itens do Pedido:</label>
+        <div id="itens-container">
+            <div class="item-row">
+                <select onchange="atualizarPrecoTotal(this)">
+                    <option value="">Selecione o produto</option>
+                    <option value="Pizza Margherita">🍕 Pizza Margherita - R$ 35.00</option>
+                    <option value="Pizza Pepperoni Tradicional">🍕 Pizza Pepperoni Tradicional - R$ 38.00</option>
+                    <option value="Pizza Mediterrânea">🍕 Pizza Mediterrânea - R$ 45.00</option>
+                    <option value="Pizza Quatro Queijos">🍕 Pizza Quatro Queijos - R$ 50.00</option>
+                    <option value="Hambúrguer Duplo">🍔 Hambúrguer Duplo - R$ 25.00</option>
+                    <option value="Hambúrguer com Pimenta">🍔 Hambúrguer com Pimenta - R$ 26.00</option>
+                    <option value="Hambúrguer Completo">🍔 Hambúrguer Completo - R$ 22.00</option>
+                    <option value="Hambúrguer com Salame">🍔 Hambúrguer com Salame - R$ 24.00</option>
+                    <option value="Refrigerante Soda">🥤 Refrigerante Soda - R$ 10.00</option>
+                    <option value="Refrigerante Guaraná">🥤 Refrigerante Guaraná - R$ 4.00</option>
+                    <option value="Refrigerante Coca Cola">🥤 Refrigerante Coca Cola - R$ 5.00</option>
+                    <option value="Refrigerante Guaraná Antarctica Zero">🥤 Refrigerante Guaraná Antarctica Zero - R$ 4.00</option>
+                    <option value="Batata Frita com Queijo">🍟 Batata Frita com Queijo - R$ 15.00</option>
+                    <option value="Batata Frita Clássica">🍟 Batata Frita Clássica - R$ 10.00</option>
+                    <option value="Batata Frita com Molho">🍟 Batata Frita com Molho - R$ 14.00</option>
+                </select>
+                <select onchange="atualizarPrecoTotal(this)">
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                    <option value="6">6</option>
+                    <option value="7">7</option>
+                    <option value="8">8</option>
+                    <option value="9">9</option>
+                    <option value="10">10</option>
+                </select>
+                <input type="number" placeholder="Preço Total (R$)" step="0.01" readonly>
+            </div>
+        </div>
+        <div class="add-item">
+            <button type="button" onclick="adicionarItem()">Adicionar Item</button>
+        </div>
+        <label for="taxa">Taxa de Entrega (R$):</label>
+        <input type="number" id="taxa" name="taxa" value="4.00" class="taxa-fixa" readonly>
+        <label for="pagamento">Forma de Pagamento:</label>
+        <select id="pagamento" name="pagamento" required>
+            <option value="Dinheiro">Dinheiro</option>
+            <option value="Cartão de Crédito">Cartão de Crédito</option>
+            <option value="Cartão de Débito">Cartão de Débito</option>
+            <option value="PIX">PIX</option>
+        </select>
+        <label for="observacoes">Observações:</label>
+        <textarea id="observacoes" name="observacoes" placeholder="Digite suas observações" rows="4"></textarea>
+        <label for="total">Total:</label>
+        <input type="number" id="total" name="total" placeholder="Total do Pedido" readonly>
+        <button type="submit">Enviar Pedido</button>
+    </form>
+</body>
+</html>
