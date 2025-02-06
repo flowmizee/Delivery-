@@ -244,11 +244,11 @@
       const startTime = new Date(saoPauloTime.getFullYear(), saoPauloTime.getMonth(), saoPauloTime.getDate(), 18, 0, 0);
       const endTime = new Date(saoPauloTime.getFullYear(), saoPauloTime.getMonth(), saoPauloTime.getDate(), 22, 0, 0);
       if (saoPauloTime >= startTime && saoPauloTime <= endTime) {
-        statusContainer.innerHTML = "Estamos Aberto 🥳"; // Adiciona o emoji "🥳"
+        statusContainer.innerHTML = "Estamos Abertos 🥳"; // Adiciona o emoji "🥳"
         statusContainer.classList.add("aberto"); // Adiciona a classe "aberto"
         statusContainer.classList.remove("fechado"); // Remove a classe "fechado"
       } else {
-        statusContainer.innerHTML = "Estamos Fechado 😕"; // Adiciona o emoji "😕"
+        statusContainer.innerHTML = "Estamos Fechados 😕"; // Adiciona o emoji "😕"
         statusContainer.classList.add("fechado"); // Adiciona a classe "fechado"
         statusContainer.classList.remove("aberto"); // Remove a classe "aberto"
       }
@@ -290,5 +290,4 @@
     <button type="submit">Enviar Pedido</button>
   </form>
 </body>
-    </html>
-        
+</html>
