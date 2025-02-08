@@ -9,7 +9,7 @@
       font-family: Arial, sans-serif;
       background-color: #002a7b; /* Azul #002a7b */
       margin: 20px;
-      background-image: radial-gradient(circle at center bottom, rgba(255,255,255,0.3) 20%, rgba(255,255,255,0) 100%); /* Brilho sutil na parte inferior */
+      background-image: radial-gradient(circle at center bottom, rgba(255,255,255,0.3) 20%, rgba(255,255,255,0) 100%);
       background-size: cover;
     }
     h1 {
@@ -116,46 +116,45 @@
     }
   </style>
   <script>
-    // Substitua "YOUR_SPREADSHEET_ID" e "YOUR_API_KEY" pelos seus dados
-    const spreadsheetId = '1Cr6umBq_mshBflazCsFx6VcGaHPklkoS31IzKfa8IBk'; // ID da planilha extraído da URL
-    const apiKey = 'AIzaSyB1PKWmnDpWTDsochgDiTVn_OiZFzHqNmc'; // Sua chave da API
-    let produtos = [];
+    // Objeto que armazenará os produtos carregados da planilha
+    const produtos = {}; // Inicialmente vazio
 
-    // Função para carregar o cardápio da planilha
-    async function carregarCardapio() {
+    // Função para carregar os dados da planilha do Google Sheets (CSV)
+    async function carregarProdutosDaPlanilha() {
+      // URL da sua planilha publicada em formato CSV:
+      const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQrtGErWiwjhuVjEZgUe-6WbKpgCe8vxS1RiFXJ8QUcPthAtb0oCJJHbBX55oDghCNI_dIXz2_i4sVr/pub?output=csv";
       try {
-        const response = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/A1:D?valueInputOption=USER_ENTERED`, {
-          headers: {
-            'Authorization': `Bearer ${apiKey}`
-          }
+        const resposta = await fetch(url);
+        const csvText = await resposta.text();
+        // Divide o CSV em linhas e remove as linhas vazias
+        const linhas = csvText.split("\n").map(linha => linha.trim()).filter(linha => linha);
+        // Remove a primeira linha (cabeçalho)
+        linhas.shift();
+        // Limpa o objeto produtos antes de adicionar os novos dados
+        for (const key in produtos) {
+          delete produtos[key];
+        }
+        // Para cada linha, assumindo que as colunas são: Nome do Produto, Preço, Emoji
+        linhas.forEach(linha => {
+          const colunas = linha.split(",").map(coluna => coluna.trim());
+          const nome = colunas[0];
+          // Substitua vírgula por ponto se necessário para o preço
+          const preco = parseFloat(colunas[1].replace(",", "."));
+          const emoji = colunas[2];
+          // Atualiza o objeto produtos
+          produtos[nome] = { preco, emoji };
         });
-        const data = await response.json();
-        produtos = data.values.slice(1); // Remove a primeira linha (cabeçalho)
-
-        // Formata os dados dos produtos
-        produtos.forEach((produto, index) => {
-          produto.id = parseInt(produto[0]); // ID do produto
-          produto.nome = produto[1]; // Nome do produto
-          produto.preco = parseFloat(produto[2]); // Preço do produto
-          produto.emoji = produto[3]; // Emoji do produto
-        });
-
-        // Atualiza o select de produtos
-        const selectProduto = document.querySelector('select[onchange="atualizarPrecoTotal(this)"]');
-        selectProduto.innerHTML = '';
-        produtos.forEach(produto => {
-          const option = document.createElement('option');
-          option.value = produto.id; // Define o ID do produto como valor da opção
-          option.textContent = `${produto.emoji} ${produto.nome} - R$ ${produto.preco.toFixed(2)}`; // Emoji, nome e preço
-          selectProduto.appendChild(option);
-        });
+        console.log("Produtos carregados da planilha:", produtos);
       } catch (error) {
-        console.error('Erro ao carregar o cardápio:', error);
+        console.error("Erro ao carregar os produtos da planilha:", error);
       }
     }
 
-    // Chama a função para carregar o cardápio ao carregar a página
-    carregarCardapio();
+    // Chama a função para carregar os produtos da planilha quando o DOM estiver pronto
+    window.addEventListener('DOMContentLoaded', function() {
+      carregarProdutosDaPlanilha();
+      atualizarStatus(); // Inicia a atualização do status
+    });
 
     // Função para adicionar um novo item no pedido
     function adicionarItem() {
@@ -165,7 +164,7 @@
       novoItem.innerHTML = `
         <select onchange="atualizarPrecoTotal(this)">
           <option value="">Selecione o produto</option>
-          <!-- Opções de produtos serão adicionadas aqui -->
+          ${Object.keys(produtos).map(produto => `<option value="${produto}">${produtos[produto].emoji} ${produto} - R$ ${produtos[produto].preco.toFixed(2)}</option>`).join('')}
         </select>
         <select onchange="atualizarPrecoTotal(this)">
           <option value="1">Quantidade: 1</option>
@@ -183,26 +182,17 @@
         <button onclick="removerItem(this)">Remover</button>
       `;
       itensContainer.appendChild(novoItem);
-
-      // Atualiza o select de produtos do novo item
-      carregarCardapio().then(() => {
-        const novoSelect = novoItem.querySelector('select');
-        novoSelect.innerHTML = selectProduto.innerHTML; // Copia as opções do select original
-      });
     }
 
     // Função para atualizar o preço total do item
     function atualizarPrecoTotal(selectElement) {
       const itemRow = selectElement.parentElement;
-      const produtoId = parseInt(itemRow.querySelector('select:nth-child(1)').value);
-      const quantidade = parseInt(itemRow.querySelector('select:nth-child(2)').value);
-      if (produtoId >= 0 && quantidade > 0) {
-        const produto = produtos.find(p => p.id === produtoId);
-        if (produto) {
-          const precoTotal = (produto.preco * quantidade).toFixed(2);
-          itemRow.querySelector('input').value = precoTotal;
-          calcularTotal();
-        }
+      const produto = itemRow.querySelector('select:nth-child(1)').value;
+      const quantidade = itemRow.querySelector('select:nth-child(2)').value;
+      if (produto && quantidade) {
+        const precoTotal = (produtos[produto].preco * quantidade).toFixed(2);
+        itemRow.querySelector('input').value = precoTotal;
+        calcularTotal();
       } else {
         itemRow.querySelector('input').value = '';
         calcularTotal();
@@ -213,6 +203,7 @@
     function calcularTotal() {
       const itensContainer = document.getElementById("itens-container").children;
       let total = 0;
+      // Verifica se há itens no pedido
       if (itensContainer.length > 0) {
         for (let i = 0; i < itensContainer.length; i++) {
           const item = itensContainer[i].children;
@@ -223,6 +214,7 @@
         const totalPedido = total + taxaEntrega;
         document.getElementById("total").value = totalPedido.toFixed(2);
       } else {
+        // Se não houver itens, zera o total
         document.getElementById("total").value = '0.00';
       }
     }
@@ -238,39 +230,38 @@
       const itensContainer = document.getElementById("itens-container").children;
       let itens = "";
       let temProdutoVazio = false;
+
       for (let i = 0; i < itensContainer.length; i++) {
         const item = itensContainer[i].children;
-        const produtoId = parseInt(item[0].value);
-        if (produtoId === "") {
+        const produtoSelecionado = item[0].value;
+        if (produtoSelecionado === "") {
           temProdutoVazio = true;
-          break; // Sai do loop assim que encontra um item com produto vazio
+          break;
         }
-        const quantidade = parseInt(item[1].value);
-        const precoTotal = parseFloat(item[2].value);
-        const produto = produtos.find(p => p.id === produtoId);
-        if (produto) {
-          itens += `${produto.emoji} ${produto.nome} x${quantidade} - R$ ${precoTotal}%0A`;
-        }
+        const quantidade = item[1].value;
+        const precoTotal = item[2].value;
+        itens += `${produtos[produtoSelecionado].emoji} ${produtoSelecionado} x${quantidade} - R$ ${precoTotal}%0A`;
       }
+
       if (temProdutoVazio) {
         alert("Por favor, selecione um produto ou remova os itens vazios do seu pedido.");
-        return; // Impede o envio do pedido
+        return;
       }
+
       let mensagem = `*PEDIDO*%0A%0A📋 *Dados do Cliente:*%0A- Nome: ${nome}%0A- Endereço: ${endereco}%0A%0A📦 *Itens do Pedido:*%0A${itens}%0A%0A💵 *Forma de Pagamento:* `;
       if (pagamento === 'PIX') {
-        mensagem += `PIX - Chave: renimarfilho000@gmail.com %0A`; // Substitua 'chavepix' pela chave PIX do estabelecimento
+        mensagem += `PIX - Chave: renimarfilho000@gmail.com %0A`;
       } else if (pagamento === 'Cartão de Crédito' || pagamento === 'Cartão de Débito') {
-        mensagem += `Cartão - Link para Pagamento: link.mercadopago.com.br/flowmize %0A`; // Substitua 'linkpagamento' pelo link do cartão de crédito/débito
+        mensagem += `Cartão - Link para Pagamento: link.mercadopago.com.br/flowmize %0A`;
       } else if (pagamento === 'Dinheiro') {
-        mensagem += `Dinheiro %0A`; // Não precisa de alteração
+        mensagem += `Dinheiro %0A`;
       }
       mensagem += `🚚 *Taxa de Entrega:* R$ ${taxa}%0A🔴 *Total do Pedido:* R$ ${total}%0A%0A*Observações:* ${observacoes}`;
-      const telefone = "98981729088"; //Substitua pelo número correto
-      if (total > 0) { // Verifica se o total é maior que zero
-        const url = `https://wa.me/55${telefone}?text=${mensagem}`; // Substitua 'telefone' pelo número do WhatsApp da lanchonete
+      const telefone = "98981729088";
+      if (total > 0) {
+        const url = `https://wa.me/55${telefone}?text=${mensagem}`;
         window.open(url, "_blank");
       } else {
-        // Mostra um alerta caso o total seja zero
         alert("Por favor, adicione pelo menos um item ao seu pedido.");
       }
     }
@@ -278,8 +269,8 @@
     // Função para remover um item do carrinho
     function removerItem(button) {
       const itemRow = button.parentElement;
-      itemRow.remove(); // Remove a linha do item do carrinho
-      calcularTotal(); // Recalcula o total do pedido
+      itemRow.remove();
+      calcularTotal();
     }
 
     // Função para atualizar a mensagem de status (aberto/fechado)
@@ -291,17 +282,17 @@
       const startTime = new Date(saoPauloTime.getFullYear(), saoPauloTime.getMonth(), saoPauloTime.getDate(), 18, 0, 0);
       const endTime = new Date(saoPauloTime.getFullYear(), saoPauloTime.getMonth(), saoPauloTime.getDate(), 22, 0, 0);
       if (saoPauloTime >= startTime && saoPauloTime <= endTime) {
-        statusContainer.innerHTML = "Estamos Abertos 🥳"; // Adiciona o emoji "🥳"
-        statusContainer.classList.add("aberto"); // Adiciona a classe "aberto"
-        statusContainer.classList.remove("fechado"); // Remove a classe "fechado"
+        statusContainer.innerHTML = "Estamos Abertos 🥳";
+        statusContainer.classList.add("aberto");
+        statusContainer.classList.remove("fechado");
       } else {
-        statusContainer.innerHTML = "Estamos Fechados 😕"; // Adiciona o emoji "😕"
-        statusContainer.classList.add("fechado"); // Adiciona a classe "fechado"
-        statusContainer.classList.remove("aberto"); // Remove a classe "aberto"
+        statusContainer.innerHTML = "Estamos Fechados 😕";
+        statusContainer.classList.add("fechado");
+        statusContainer.classList.remove("aberto");
       }
     }
 
-    // Chama a função atualizarStatus() a cada segundo
+    // Atualiza o status a cada segundo
     setInterval(atualizarStatus, 1000);
   </script>
 </head>
@@ -317,7 +308,7 @@
     <input type="text" id="endereco" name="endereco" placeholder="Digite seu endereço" required>
     <label>Itens do Pedido:</label>
     <div id="itens-container" class="itens-container">
-      <!-- REMOVIDO: <div class="item-row"> ... </div> -->
+      <!-- Os itens serão inseridos dinamicamente -->
     </div>
     <div class="add-item">
       <button type="button" onclick="adicionarItem()">Adicionar Item</button>
@@ -337,5 +328,9 @@
     <input type="number" id="total" name="total" placeholder="Total do Pedido" readonly>
     <button type="submit">Enviar Pedido</button>
   </form>
+  <script>
+    // Chama a função para carregar os produtos da planilha assim que o DOM estiver pronto
+    window.addEventListener('DOMContentLoaded', carregarProdutosDaPlanilha);
+  </script>
 </body>
-</html>
+  </html>
