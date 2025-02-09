@@ -194,7 +194,7 @@
         <button onclick="removerItem(this)">Remover</button>
       `;
       itensContainer.appendChild(novoItem);
-      // Atualiza o select deste novo item para garantir que as opções apareçam
+      // Atualiza o select deste novo item, caso os produtos já tenham sido carregados
       atualizarSelectProdutos();
     }
 
@@ -231,7 +231,7 @@
       }
     }
 
-    // Função para enviar o pedido via WhatsApp
+    // Função para enviar o pedido via WhatsApp com mensagem formatada
     function enviarPedido() {
       const nome = document.getElementById("nome").value;
       const endereco = document.getElementById("endereco").value;
@@ -252,7 +252,7 @@
         }
         const quantidade = item[1].value;
         const precoTotal = item[2].value;
-        itens += `${produtos[produtoSelecionado].emoji} ${produtoSelecionado} x${quantidade} - R$ ${precoTotal}%0A`;
+        itens += `${produtos[produtoSelecionado].emoji} ${produtoSelecionado} x${quantidade} - R$ ${precoTotal}\n`;
       }
 
       if (temProdutoVazio) {
@@ -260,15 +260,15 @@
         return;
       }
 
-      let mensagem = `*PEDIDO*%0A%0A📋 *Dados do Cliente:*%0A- Nome: ${nome}%0A- Endereço: ${endereco}%0A%0A📦 *Itens do Pedido:*%0A${itens}%0A%0A💵 *Forma de Pagamento:* `;
+      let mensagem = `*PEDIDO*\n\n📋 *Dados do Cliente:*\n- Nome: ${nome}\n- Endereço: ${endereco}\n\n📦 *Itens do Pedido:*\n${itens}\n💵 *Forma de Pagamento:* `;
       if (pagamento === 'PIX') {
-        mensagem += `PIX - Chave: renimarfilho000@gmail.com %0A`;
+        mensagem += `PIX - Chave: renimarfilho000@gmail.com\n`;
       } else if (pagamento === 'Cartão de Crédito' || pagamento === 'Cartão de Débito') {
-        mensagem += `Cartão - Link para Pagamento: link.mercadopago.com.br/flowmize %0A`;
+        mensagem += `Cartão - Link para Pagamento: link.mercadopago.com.br/flowmize\n`;
       } else if (pagamento === 'Dinheiro') {
-        mensagem += `Dinheiro %0A`;
+        mensagem += `Dinheiro\n`;
       }
-      mensagem += `🚚 *Taxa de Entrega:* R$ ${taxa}%0A🔴 *Total do Pedido:* R$ ${total}%0A%0A*Observações:* ${observacoes}`;
+      mensagem += `🚚 *Taxa de Entrega:* R$ ${taxa}\n🔴 *Total do Pedido:* R$ ${total}\n\n*Observações:* ${observacoes}`;
       const telefone = "98981729088";
       if (total > 0) {
         const url = `https://wa.me/55${telefone}?text=${encodeURIComponent(mensagem)}`;
