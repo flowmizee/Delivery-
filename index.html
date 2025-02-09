@@ -119,28 +119,32 @@
     // Objeto que armazenará os produtos carregados da planilha
     const produtos = {}; // Inicialmente vazio
 
-    // URL da sua planilha publicada em formato CSV:
-    const URL_PLANILHA = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQrtGErWiwjhuVjEZgUe-6WbKpgCe8vxS1RiFXJ8QUcPthAtb0oCJJHbBX55oDghCNI_dIXz2_i4sVr/pub?output=csv'; // Substitua pela URL da sua planilha
-
     // Função para carregar os dados da planilha do Google Sheets (CSV)
     async function carregarProdutosDaPlanilha() {
+      // URL da sua planilha publicada em formato CSV:
+      const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQrtGErWiwjhuVjEZgUe-6WbKpgCe8vxS1RiFXJ8QUcPthAtb0oCJJHbBX55oDghCNI_dIXz2_i4sVr/pub?output=csv";
       try {
-        const resposta = await fetch(URL_PLANILHA); // URL da planilha
+        const resposta = await fetch(url);
         const csvText = await resposta.text();
+        // Divide o CSV em linhas e remove as linhas vazias
         const linhas = csvText.split("\n").map(linha => linha.trim()).filter(linha => linha);
+        // Remove a primeira linha (cabeçalho)
         linhas.shift();
+        // Limpa o objeto produtos antes de adicionar os novos dados
         for (const key in produtos) {
           delete produtos[key];
         }
+        // Para cada linha, assumindo que as colunas são: Nome do Produto, Preço, Emoji
         linhas.forEach(linha => {
           const colunas = linha.split(",").map(coluna => coluna.trim());
           const nome = colunas[0];
+          // Substitua vírgula por ponto se necessário para o preço
           const preco = parseFloat(colunas[1].replace(",", "."));
           const emoji = colunas[2];
+          // Atualiza o objeto produtos
           produtos[nome] = { preco, emoji };
         });
         console.log("Produtos carregados da planilha:", produtos);
-        atualizarProdutos(); // Atualiza a lista de produtos
       } catch (error) {
         console.error("Erro ao carregar os produtos da planilha:", error);
       }
@@ -152,20 +156,6 @@
       atualizarStatus(); // Inicia a atualização do status
     });
 
-    // Função para atualizar a lista de produtos no select
-    function atualizarProdutos() {
-      const selectProduto = document.querySelector('select:nth-child(1)'); // Seleciona o <select> do produto
-      selectProduto.innerHTML = ''; // Limpa o <select>
-
-      // Adiciona as opções de produtos ao <select>
-      Object.keys(produtos).forEach(produto => {
-        const option = document.createElement('option');
-        option.value = produto;
-        option.text = `${produtos[produto].emoji} ${produto} - R$ ${produtos[produto].preco.toFixed(2)}`;
-        selectProduto.appendChild(option);
-      });
-    }
-
     // Função para adicionar um novo item no pedido
     function adicionarItem() {
       const itensContainer = document.getElementById("itens-container");
@@ -173,6 +163,7 @@
       novoItem.className = "item-row";
       novoItem.innerHTML = `
         <select onchange="atualizarPrecoTotal(this)">
+          <option value="">Selecione o produto</option>
           ${Object.keys(produtos).map(produto => `<option value="${produto}">${produtos[produto].emoji} ${produto} - R$ ${produtos[produto].preco.toFixed(2)}</option>`).join('')}
         </select>
         <select onchange="atualizarPrecoTotal(this)">
@@ -239,6 +230,7 @@
       const itensContainer = document.getElementById("itens-container").children;
       let itens = "";
       let temProdutoVazio = false;
+
       for (let i = 0; i < itensContainer.length; i++) {
         const item = itensContainer[i].children;
         const produtoSelecionado = item[0].value;
@@ -250,10 +242,12 @@
         const precoTotal = item[2].value;
         itens += `${produtos[produtoSelecionado].emoji} ${produtoSelecionado} x${quantidade} - R$ ${precoTotal}%0A`;
       }
+
       if (temProdutoVazio) {
         alert("Por favor, selecione um produto ou remova os itens vazios do seu pedido.");
         return;
       }
+
       let mensagem = `*PEDIDO*%0A%0A📋 *Dados do Cliente:*%0A- Nome: ${nome}%0A- Endereço: ${endereco}%0A%0A📦 *Itens do Pedido:*%0A${itens}%0A%0A💵 *Forma de Pagamento:* `;
       if (pagamento === 'PIX') {
         mensagem += `PIX - Chave: renimarfilho000@gmail.com %0A`;
@@ -265,7 +259,7 @@
       mensagem += `🚚 *Taxa de Entrega:* R$ ${taxa}%0A🔴 *Total do Pedido:* R$ ${total}%0A%0A*Observações:* ${observacoes}`;
       const telefone = "98981729088";
       if (total > 0) {
-        const url = `https://wa.me/55${telefone}?text=${encodeURIComponent(mensagem)}`;
+        const url = `https://wa.me/55${telefone}?text=${mensagem}`;
         window.open(url, "_blank");
       } else {
         alert("Por favor, adicione pelo menos um item ao seu pedido.");
