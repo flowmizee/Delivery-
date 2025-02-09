@@ -118,7 +118,6 @@
   <script>
     // Objeto que armazenará os produtos carregados da planilha
     const produtos = {}; // Inicialmente vazio
-
     // Função para carregar os dados da planilha do Google Sheets (CSV)
     async function carregarProdutosDaPlanilha() {
       // URL da sua planilha publicada em formato CSV:
@@ -151,7 +150,6 @@
         console.error("Erro ao carregar os produtos da planilha:", error);
       }
     }
-
     // Função para atualizar os selects de produto, preservando o valor selecionado se existir
     function atualizarSelectProdutos() {
       const selects = document.querySelectorAll("#itens-container .item-row select:first-child");
@@ -168,13 +166,11 @@
         }
       });
     }
-
     // Chama a função para carregar os produtos da planilha quando o DOM estiver pronto
     window.addEventListener('DOMContentLoaded', function() {
       carregarProdutosDaPlanilha();
       atualizarStatus(); // Inicia a atualização do status
     });
-
     // Função para adicionar um novo item no pedido
     function adicionarItem() {
       const itensContainer = document.getElementById("itens-container");
@@ -197,7 +193,6 @@
       // Atualiza o select deste novo item, caso os produtos já tenham sido carregados
       atualizarSelectProdutos();
     }
-
     // Função para atualizar o preço total do item
     function atualizarPrecoTotal(selectElement) {
       const itemRow = selectElement.parentElement;
@@ -212,7 +207,6 @@
         calcularTotal();
       }
     }
-
     // Função para calcular o total do pedido
     function calcularTotal() {
       const itensContainer = document.getElementById("itens-container").children;
@@ -230,7 +224,6 @@
         document.getElementById("total").value = '0.00';
       }
     }
-
     // Função para enviar o pedido via WhatsApp com mensagem formatada
     function enviarPedido() {
       const nome = document.getElementById("nome").value;
@@ -242,7 +235,6 @@
       const itensContainer = document.getElementById("itens-container").children;
       let itens = "";
       let temProdutoVazio = false;
-
       for (let i = 0; i < itensContainer.length; i++) {
         const item = itensContainer[i].children;
         const produtoSelecionado = item[0].value;
@@ -254,12 +246,10 @@
         const precoTotal = item[2].value;
         itens += `${produtos[produtoSelecionado].emoji} ${produtoSelecionado} x${quantidade} - R$ ${precoTotal}\n`;
       }
-
       if (temProdutoVazio) {
         alert("Por favor, selecione um produto ou remova os itens vazios do seu pedido.");
         return;
       }
-
       let mensagem = `*PEDIDO*\n\n📋 *Dados do Cliente:*\n- Nome: ${nome}\n- Endereço: ${endereco}\n\n📦 *Itens do Pedido:*\n${itens}\n💵 *Forma de Pagamento:* `;
       if (pagamento === 'PIX') {
         mensagem += `PIX - Chave: renimarfilho000@gmail.com\n`;
@@ -277,14 +267,12 @@
         alert("Por favor, adicione pelo menos um item ao seu pedido.");
       }
     }
-
     // Função para remover um item do carrinho
     function removerItem(button) {
       const itemRow = button.parentElement;
       itemRow.remove();
       calcularTotal();
     }
-
     // Função para atualizar a mensagem de status (aberto/fechado)
     function atualizarStatus() {
       const statusContainer = document.getElementById("status-container");
@@ -303,7 +291,6 @@
         statusContainer.classList.remove("aberto");
       }
     }
-
     // Atualiza o status a cada segundo
     setInterval(atualizarStatus, 1000);
   </script>
@@ -346,3 +333,4 @@
   </script>
 </body>
 </html>
+
