@@ -1,477 +1,238 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pedido de Delivery</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #002a7b; /* Azul #002a7b */
-      margin: 20px;
-      background-image: radial-gradient(circle at center bottom, rgba(255,255,255,0.3) 20%, rgba(255,255,255,0) 100%);
-      background-size: cover;
-    }
-    h1 {
-      text-align: center;
-      color: white;
-      font-weight: bold;
-    }
-    form {
-      max-width: 600px;
-      margin: 0 auto;
-      padding: 20px;
-      background-color: #000;
-      border-radius: 10px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-      color: white;
-    }
-    label {
-      font-weight: bold;
-      margin-top: 10px;
-      display: block;
-    }
-    input, select, textarea {
-      width: calc(100% - 20px);
-      padding: 10px;
-      margin-top: 5px;
-      margin-bottom: 15px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-      background-color: #333;
-      color: white;
-    }
-    .item-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      padding: 10px;
-      border: 1px solid #444;
-      margin-bottom: 10px;
-    }
-    /* Removendo as larguras originais e usando flexbox para distribuir os elementos */
-    .item-row select,
-    .item-row input,
-    .item-row button {
-      background-color: #000;
-      font-size: 16px;
-      padding: 12px;
-    }
-    /* O primeiro select (produto) ocupa 50% */
-    .item-row select:nth-of-type(1) {
-      flex: 0 0 50%;
-    }
-    /* O segundo select (quantidade) ocupa 30% */
-    .item-row select:nth-of-type(2) {
-      flex: 0 0 30%;
-    }
-    /* O botão "Remover" ocupa 20% */
-    .item-row button {
-      flex: 0 0 20%;
-    }
-    .add-item {
-      text-align: center;
-      margin-bottom: 15px;
-    }
-    .taxa-fixa {
-      background-color: #333;
-      border: none;
-      color: white;
-      font-weight: bold;
-    }
-    /* Botões gerais em azul */
-    button {
-      padding: 8px 15px;
-      background-color: #002a7b;
-      color: white;
-      font-size: 14px;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-    button:hover {
-      background-color: #001e56;
-      transition: background-color 0.3s ease;
-    }
-    textarea {
-      background-color: #000;
-    }
-    .add-item button,
-    form button[type="submit"] {
-      width: 100%;
-      padding: 12px 20px;
-      font-size: 16px;
-    }
-    .status-container {
-      background-color: #000;
-      color: #fff;
-      padding: 25px 50px;
-      border-radius: 8px;
-      text-align: center;
-      margin: 30px auto;
-      font-size: 18px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      max-width: 600px;
-    }
-    .status-container.fechado {
-      background-color: #000;
-      color: #fff;
-      font-size: 24px;
-    }
-    .status-container.aberto {
-      background-color: #000;
-      color: #fff;
-      font-size: 24px;
-    }
-    #opcao-entrega {
-      text-align: center;
-      margin-bottom: 15px;
-    }
-    /* Botões de Entrega/Retirada */
-    #opcao-entrega button {
-      width: 45%;
-      margin: 0 2%;
-      padding: 10px;
-      font-size: 16px;
-      background-color: #FFFFFF;
-      color: #002a7b;
-      border: 1px solid #002a7b;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-    #opcao-entrega button.selected {
-      background-color: #002a7b;
-      color: #FFFFFF;
-    }
-    /* Área dos adicionais */
-    .extras-container {
-      width: 100%;
-      margin-top: 10px;
-    }
-    .extras-container p {
-      margin: 0 0 5px 0;
-      font-weight: bold;
-    }
-    .extra-item {
-      display: inline-block;
-      margin-right: 10px;
-      font-size: 0.9em;
-    }
-    .extra-item select {
-      padding: 2px 6px;
-      font-size: 0.9em;
-      margin-left: 4px;
-    }
-    .descricao-produto {
-      width: 100%;
-      margin-bottom: 10px;
-      color: #ccc;
-      font-size: 0.9em;
-      font-style: italic;
-      white-space: pre-wrap;
-      overflow-wrap: break-word;
-    }
-  </style>
-  <script>
-    let opcaoEntrega = "entrega";
-    const produtos = {};
-
-    async function carregarProdutosDaPlanilha() {
-      const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSGudIAhY04w2oPsRfM4bckCWCqPn7triE4M2f4BsdLcSqYeVwJJMv8IEwgCh33l29fH5JVuoa9pllZ/pub?output=csv";
-      try {
-        const resposta = await fetch(url);
-        const csvText = await resposta.text();
-        const linhas = csvText.split("\n").map(linha => linha.trim()).filter(linha => linha);
-        linhas.shift(); // Remove cabeçalho
-
-        // Limpa produtos
-        for (const key in produtos) { delete produtos[key]; }
-
-        linhas.forEach(linha => {
-          const colunas = linha.split(",").map(coluna => coluna.trim());
-          const nome = colunas[0];
-          const preco = parseFloat(colunas[1].replace(",", ".")) || 0;
-          const descricao = colunas[2];
-          const adicionais = [];
-          for (let i = 3; i < colunas.length; i += 2) {
-            if (colunas[i] && colunas[i+1]) {
-              adicionais.push({
-                nome: colunas[i],
-                preco: parseFloat(colunas[i+1].replace(",", ".")) || 0
-              });
-            }
-          }
-          produtos[nome] = { preco, descricao, adicionais };
-        });
-        console.log("Produtos carregados:", produtos);
-        atualizarSelectProdutos();
-      } catch (error) {
-        console.error("Erro ao carregar os produtos:", error);
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pedido de Delivery</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        /* Fundo vibrante, gradiente escuro e forte para açaíteria */
+        background: linear-gradient(135deg, #1a0033, #4b0082);
+        margin: 20px;
       }
-    }
-
-    function atualizarSelectProdutos() {
-      const selects = document.querySelectorAll("#itens-container .item-row select:first-child");
-      selects.forEach(select => {
-        const currentValue = select.value;
-        let optionsHTML = `<option value="">Selecione o produto</option>`;
-        optionsHTML += Object.keys(produtos)
-          .map(produto => `<option value="${produto}">${produto} - R$ ${produtos[produto].preco.toFixed(2)}</option>`)
-          .join('');
-        select.innerHTML = optionsHTML;
-        if (currentValue && optionsHTML.indexOf(`value="${currentValue}"`) !== -1) {
-          select.value = currentValue;
+      /* Removemos o título externo e vamos inseri-lo dentro do formulário */
+      form {
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 20px;
+        /* Fundo do formulário com gradiente vibrante e escuro */
+        background: linear-gradient(135deg, #2c003e, #7a0eb0);
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        color: white;
+      }
+      .form-header {
+        text-align: center;
+        font-size: 24px;
+        font-weight: bold;
+        margin-bottom: 20px;
+      }
+      label {
+        font-weight: bold;
+        margin-top: 10px;
+        display: block;
+      }
+      input, select, textarea {
+        width: calc(100% - 20px);
+        padding: 10px;
+        margin-top: 5px;
+        margin-bottom: 15px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        /* Fundo dos inputs com gradiente escuro e vibrante */
+        background: linear-gradient(135deg, #3b0a55, #5e2d79);
+        color: white;
+      }
+      .item-row {
+        display: flex;
+        gap: 10px;
+        padding: 10px;
+      }
+      .item-row select, .item-row input {
+        width: 32%;
+      }
+      .add-item {
+        text-align: center;
+        margin-bottom: 15px;
+      }
+      .taxa-fixa {
+        background: linear-gradient(135deg, #3b0a55, #5e2d79);
+        border: none;
+        color: white;
+        font-weight: bold;
+      }
+      button {
+        width: 100%;
+        padding: 10px;
+        /* Botão com gradiente escuro e vibrante */
+        background: linear-gradient(135deg, #4b0082, #7a0eb0);
+        color: white;
+        font-size: 16px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+      button:hover {
+        background: linear-gradient(135deg, #7a0eb0, #4b0082);
+      }
+    </style>
+    <script>
+      // Lista de produtos para açaíteria, preços e emojis
+      const produtos = {
+        "Açaí Tradicional": { preco: 20, emoji: "🍧" },
+        "Açaí com Banana": { preco: 22, emoji: "🍌" },
+        "Açaí com Morango": { preco: 23, emoji: "🍓" },
+        "Açaí com Granola": { preco: 24, emoji: "🥣" },
+        "Açaí com Leite Condensado": { preco: 25, emoji: "🥛" },
+        "Açaí Tropical": { preco: 26, emoji: "🌴" },
+        "Açaí Premium": { preco: 28, emoji: "💎" },
+        "Açaí Energético": { preco: 27, emoji: "⚡" },
+        "Açaí com Castanhas": { preco: 29, emoji: "🌰" },
+        "Açaí com Mel": { preco: 26, emoji: "🍯" },
+        "Açaí com Frutas Vermelhas": { preco: 30, emoji: "🍒" },
+        "Açaí com Kiwi": { preco: 28, emoji: "🥝" },
+        "Açaí com Coco": { preco: 27, emoji: "🥥" },
+        "Açaí com Abacaxi": { preco: 25, emoji: "🍍" },
+        "Açaí Mix Brasil": { preco: 32, emoji: "🇧🇷" }
+      };
+      // Função para adicionar um novo item no pedido
+      function adicionarItem() {
+        const itensContainer = document.getElementById("itens-container");
+        const novoItem = document.createElement("div");
+        novoItem.className = "item-row";
+        novoItem.innerHTML = `
+          <select onchange="atualizarPrecoTotal(this)">
+            <option value="">Selecione o produto</option>
+            ${Object.keys(produtos).map(produto => `<option value="${produto}">${produtos[produto].emoji} ${produto} - R$ ${produtos[produto].preco.toFixed(2)}</option>`).join('')}
+          </select>
+          <select onchange="atualizarPrecoTotal(this)">
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+            <option value="6">6</option>
+            <option value="7">7</option>
+            <option value="8">8</option>
+            <option value="9">9</option>
+            <option value="10">10</option>
+          </select>
+          <input type="number" placeholder="Preço Total (R$)" step="0.01" readonly>
+        `;
+        itensContainer.appendChild(novoItem);
+      }
+      // Função para atualizar o preço total do item
+      function atualizarPrecoTotal(selectElement) {
+        const itemRow = selectElement.parentElement;
+        const produto = itemRow.querySelector('select:nth-child(1)').value;
+        const quantidade = itemRow.querySelector('select:nth-child(2)').value;
+        if (produto && quantidade) {
+          const precoTotal = (produtos[produto].preco * quantidade).toFixed(2);
+          itemRow.querySelector('input').value = precoTotal;
+          calcularTotal();
+        } else {
+          itemRow.querySelector('input').value = '';
+          calcularTotal();
         }
-      });
-    }
-
-    function selecionarOpcao(opcao) {
-      opcaoEntrega = opcao;
-      document.getElementById("btn-entrega").classList.remove("selected");
-      document.getElementById("btn-retirada").classList.remove("selected");
-      if (opcao === "entrega") {
-        document.getElementById("btn-entrega").classList.add("selected");
-      } else {
-        document.getElementById("btn-retirada").classList.add("selected");
       }
-      calcularTotal();
-    }
-
-    function adicionarItem() {
-      const itensContainer = document.getElementById("itens-container");
-      const novoItem = document.createElement("div");
-      novoItem.className = "item-row";
-      novoItem.innerHTML = `
-        <select onchange="produtoSelecionado(this)">
-          <option value="">Selecione o produto</option>
-          ${Object.keys(produtos)
-            .map(produto => `<option value="${produto}">${produto} - R$ ${produtos[produto].preco.toFixed(2)}</option>`)
-            .join('')}
-        </select>
-        <select onchange="atualizarPrecoTotal(this)">
-          ${[...Array(10)].map((_, i) => `<option value="${i + 1}">Quantidade: ${i + 1}</option>`).join('')}
-        </select>
-        <input type="number" placeholder="Preço Total (R$)" step="0.01" readonly>
-        <button onclick="removerItem(this)">Remover</button>
-        <div class="descricao-produto"></div>
-        <div class="extras-container"></div>
-      `;
-      itensContainer.appendChild(novoItem);
-      atualizarSelectProdutos();
-    }
-
-    function produtoSelecionado(selectElement) {
-      const itemRow = selectElement.closest('.item-row');
-      const produto = selectElement.value;
-      renderDescricaoForRow(itemRow, produto);
-      renderExtrasForRow(itemRow, produto);
-      atualizarPrecoTotal(selectElement);
-    }
-
-    function renderDescricaoForRow(itemRow, produto) {
-      const descricaoContainer = itemRow.querySelector('.descricao-produto');
-      descricaoContainer.innerText = (produto && produtos[produto] && produtos[produto].descricao) ? produtos[produto].descricao : "";
-    }
-
-    function renderExtrasForRow(itemRow, produto) {
-      const extrasContainer = itemRow.querySelector('.extras-container');
-      if (produto && produtos[produto] && produtos[produto].adicionais.length > 0) {
-        let html = `<p>Adicionais:</p>`;
-        produtos[produto].adicionais.forEach(extra => {
-          html += `<div class="extra-item" data-extra-price="${extra.preco}">
-                     <span class="extra-name">${extra.nome}</span> (R$ ${extra.preco.toFixed(2)})
-                     <select class="extra-select" onchange="atualizarPrecoTotal(this)">
-                       ${[...Array(11)].map((_, i) => `<option value="${i}">${i}</option>`).join('')}
-                     </select>
-                   </div>`;
-        });
-        extrasContainer.innerHTML = html;
-      } else {
-        extrasContainer.innerHTML = "";
-      }
-    }
-
-    function atualizarPrecoTotal(element) {
-      const itemRow = element.closest('.item-row');
-      const produtoSelect = itemRow.querySelector('select:first-child');
-      const quantidadeSelect = itemRow.querySelector('select:nth-of-type(2)');
-      const produto = produtoSelect ? produtoSelect.value : "";
-      const quantidade = quantidadeSelect ? (parseInt(quantidadeSelect.value) || 1) : 1;
-      if (produto) {
-        let basePrice = Number(produtos[produto].preco) || 0;
-        let extrasSum = 0;
-        const extraItems = itemRow.querySelectorAll('.extras-container .extra-item');
-        extraItems.forEach(item => {
-          let price = Number(item.getAttribute('data-extra-price')) || 0;
-          let extraQty = parseInt(item.querySelector('.extra-select').value) || 0;
-          extrasSum += price * extraQty;
-        });
-        const totalPrice = (basePrice * quantidade) + extrasSum;
-        itemRow.querySelector('input[readonly]').value = totalPrice.toFixed(2);
-        calcularTotal();
-      } else {
-        itemRow.querySelector('input[readonly]').value = "";
-        calcularTotal();
-      }
-    }
-
-    function calcularTotal() {
-      const itensContainer = document.getElementById("itens-container").children;
-      let total = 0;
-      for (let i = 0; i < itensContainer.length; i++) {
-        const itemRow = itensContainer[i];
-        const precoTotal = parseFloat(itemRow.querySelector('input[readonly]').value) || 0;
-        total += precoTotal;
-      }
-      const taxaEntrega = opcaoEntrega === "retirada" ? 0 : parseFloat(document.getElementById("taxa").value) || 0;
-      const totalPedido = total + taxaEntrega;
-      document.getElementById("total").value = totalPedido.toFixed(2);
-    }
-
-    function enviarPedido() {
-      const nome = document.getElementById("nome").value;
-      const endereco = document.getElementById("endereco").value;
-      const complemento = document.getElementById("complemento") ? document.getElementById("complemento").value : "";
-      const pontoReferencia = document.getElementById("ponto-referencia") ? document.getElementById("ponto-referencia").value : "";
-      const taxa = opcaoEntrega === "retirada" ? "0.00" : document.getElementById("taxa").value;
-      const pagamento = document.getElementById("pagamento").value;
-      const total = document.getElementById("total").value;
-      const observacoes = document.getElementById("observacoes").value;
-      const itensContainer = document.getElementById("itens-container").children;
-      let itens = "";
-      let temProdutoVazio = false;
-      for (let i = 0; i < itensContainer.length; i++) {
-        const itemRow = itensContainer[i];
-        const produtoSelecionado = itemRow.querySelector('select:first-child').value;
-        if (produtoSelecionado === "") {
-          temProdutoVazio = true;
-          break;
+      // Função para calcular o total do pedido
+      function calcularTotal() {
+        const itensContainer = document.getElementById("itens-container").children;
+        let total = 0;
+        for (let i = 0; i < itensContainer.length; i++) {
+          const item = itensContainer[i].children;
+          const precoTotal = parseFloat(item[2].value) || 0;
+          total += precoTotal;
         }
-        const quantidade = itemRow.querySelector('select:nth-of-type(2)').value;
-        const precoTotal = itemRow.querySelector('input[readonly]').value;
-        let itemText = `${produtoSelecionado} x${quantidade} - R$ ${precoTotal}\n`;
-        const extraItems = itemRow.querySelectorAll('.extras-container .extra-item');
-        extraItems.forEach(item => {
-          let extraQty = parseInt(item.querySelector('.extra-select').value) || 0;
-          if (extraQty > 0) {
-            const extraName = item.querySelector('.extra-name').innerText;
-            let extraUnitPrice = Number(item.getAttribute('data-extra-price')) || 0;
-            let extraTotal = extraUnitPrice * extraQty;
-            itemText += `   + ${extraName} x${extraQty} - R$ ${extraTotal.toFixed(2)}\n`;
-          }
-        });
-        itens += itemText;
+        const taxaEntrega = parseFloat(document.getElementById("taxa").value) || 0;
+        const totalPedido = total + taxaEntrega;
+        document.getElementById("total").value = totalPedido.toFixed(2);
       }
-      if (temProdutoVazio || parseFloat(total) <= 4) {
-        alert("Não é possível enviar o pedido vazio. Por favor, adicione pelo menos um item.");
-        return;
-      }
-      let mensagem = `*PEDIDO*\n\n📋 *Dados do Cliente:*\n- Nome: ${nome}\n- Endereço: ${endereco}\n`;
-      if (complemento) mensagem += `- Complemento: ${complemento}\n`;
-      if (pontoReferencia) {
-        mensagem += `- Ponto de Referência: ${pontoReferencia}\n`;
-      } else {
-        alert("Por favor, preencha o Ponto de Referência para facilitar a localização.");
-        return;
-      }
-      mensagem += `\n📦 *Itens do Pedido:*\n${itens}\n💵 *Forma de Pagamento:* ${pagamento}\n`;
-      if (pagamento === 'PIX') {
-        mensagem += `PIX - Chave: renimarfilho000@gmail.com\n`;
-      } else if (pagamento === 'Cartão de Crédito' || pagamento === 'Cartão de Débito') {
-        mensagem += `Cartão - Link para Pagamento: link.mercadopago.com.br/flowmize\n`;
-      } else if (pagamento === 'Dinheiro') {
-        mensagem += `Dinheiro\n`;
-      }
-      mensagem += `🚚 *Taxa de Entrega:* R$ ${taxa}\n🔴 *Total do Pedido:* R$ ${total}\n\n*Modo:* ${opcaoEntrega === "entrega" ? "Entrega" : "Retirada"}\n\n*Observações:* ${observacoes}`;
-      const telefone = "98981729088";
-      if (parseFloat(total) > 0) {
-        const url = `whatsapp://send?phone=+55${telefone}&text=${encodeURIComponent(mensagem)}`;
+      // Função para enviar o pedido via WhatsApp
+      function enviarPedido() {
+        const nome = document.getElementById("nome").value;
+        const endereco = document.getElementById("endereco").value;
+        const taxa = document.getElementById("taxa").value;
+        const pagamento = document.getElementById("pagamento").value;
+        const total = document.getElementById("total").value;
+        const observacoes = document.getElementById("observacoes").value;
+        const itensContainer = document.getElementById("itens-container").children;
+        let itens = "";
+        for (let i = 0; i < itensContainer.length; i++) {
+          const item = itensContainer[i].children;
+          const nomeItem = item[0].value;
+          const quantidade = item[1].value;
+          const precoTotal = item[2].value;
+          itens += `${produtos[nomeItem].emoji} ${nomeItem} x${quantidade} - R$ ${precoTotal}%0A`;
+        }
+        const mensagem = `*Pedido de Delivery*%0A%0A📋 *Dados do Cliente:*%0A- Nome: ${nome}%0A- Endereço: ${endereco}%0A%0A📦 *Itens do Pedido:*%0A${itens}%0A%0A💵 *Forma de Pagamento:* ${pagamento}%0A🚚 *Taxa de Entrega:* R$ ${taxa}%0A🔴 *Total do Pedido:* R$ ${total}%0A%0A*Observações:* ${observacoes}`;
+        const telefone = "98981729088"; //Substitua pelo número correto
+        const url = `https://wa.me/55${telefone}?text=${mensagem}`;
         window.open(url, "_blank");
-      } else {
-        alert("Por favor, adicione pelo menos um item ao seu pedido.");
       }
-    }
-
-    function removerItem(button) {
-      const itemRow = button.closest('.item-row');
-      itemRow.remove();
-      calcularTotal();
-    }
-
-    function atualizarStatus() {
-      const statusContainer = document.getElementById("status-container");
-      const now = new Date();
-      // Utiliza o fuso horário "America/Fortaleza" para o horário do Maranhão
-      const maranhaoTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Fortaleza' }));
-      const dayOfWeek = maranhaoTime.getDay(); // 0 = Domingo, 1 = Segunda, ..., 6 = Sábado
-      const hour = maranhaoTime.getHours();
-      // Aberto de segunda a sexta-feira (dias 1 a 5) das 18h00 às 23h00
-      if (dayOfWeek >= 1 && dayOfWeek <= 5 && hour >= 18 && hour < 23) {
-        statusContainer.innerHTML = "Estamos Abertos 🥳";
-        statusContainer.classList.add("aberto");
-        statusContainer.classList.remove("fechado");
-      } else {
-        statusContainer.innerHTML = "Estamos Fechados 😕";
-        statusContainer.classList.add("fechado");
-        statusContainer.classList.remove("aberto");
-      }
-    }
-
-    setInterval(atualizarStatus, 1000);
-    window.addEventListener('DOMContentLoaded', function() {
-      carregarProdutosDaPlanilha();
-      atualizarStatus();
-    });
-  </script>
-</head>
-<body>
-  <div class="status-container" id="status-container">
-    <!-- Mensagem de status -->
-  </div>
-  <form onsubmit="event.preventDefault(); enviarPedido();">
-    <h1>PEDIDO 🍕🍔🥤🍟</h1>
-    <label for="nome">Nome do Cliente:</label>
-    <input type="text" id="nome" name="nome" placeholder="Digite seu nome" required>
-    <label for="endereco">Endereço de Entrega:</label>
-    <input type="text" id="endereco" name="endereco" placeholder="Cidade, Bairro, Rua, Número" required>
-    <label for="complemento">Complemento (opcional):</label>
-    <input type="text" id="complemento" name="complemento" placeholder="Ex: Apto. 101">
-    <label for="ponto-referencia">Ponto de Referência:</label>
-    <input type="text" id="ponto-referencia" name="ponto-referencia" placeholder="Ex: Em frente a padaria, ao lado do banco" required>
-    <label>Itens do Pedido:</label>
-    <div id="itens-container" class="itens-container">
-      <!-- Itens adicionados dinamicamente -->
-    </div>
-    <div class="add-item">
-      <button type="button" onclick="adicionarItem()">Adicionar Item</button>
-    </div>
-    <label for="taxa">Taxa de Entrega (R$):</label>
-    <input type="number" id="taxa" name="taxa" value="4.00" class="taxa-fixa" readonly>
-    <label for="pagamento">Forma de Pagamento:</label>
-    <select id="pagamento" name="pagamento" required>
-      <option value="Dinheiro">Dinheiro</option>
-      <option value="Cartão de Crédito">Cartão de Crédito</option>
-      <option value="Cartão de Débito">Cartão de Débito</option>
-      <option value="PIX">PIX</option>
-    </select>
-    <label for="observacoes">Observações:</label>
-    <textarea id="observacoes" name="observacoes" placeholder="Digite suas observações" rows="4"></textarea>
-    <label>Opção:</label>
-    <div id="opcao-entrega">
-      <button type="button" id="btn-entrega" onclick="selecionarOpcao('entrega')" class="selected">Entrega</button>
-      <button type="button" id="btn-retirada" onclick="selecionarOpcao('retirada')">Retirada</button>
-    </div>
-    <label for="total">Total:</label>
-    <input type="number" id="total" name="total" placeholder="Total do Pedido" readonly>
-    <button type="submit">Enviar Pedido</button>
-  </form>
-  <script>
-    window.addEventListener('DOMContentLoaded', function() {
-      carregarProdutosDaPlanilha();
-      atualizarStatus();
-    });
-  </script>
-</body>
-                                         </html>
+    </script>
+  </head>
+  <body>
+    <form onsubmit="event.preventDefault(); enviarPedido();">
+      <div class="form-header">PEDIDO 🍇💜🍨</div>
+      <label for="nome">Nome do Cliente:</label>
+      <input type="text" id="nome" name="nome" placeholder="Digite seu nome" required>
+      <label for="endereco">Endereço de Entrega:</label>
+      <input type="text" id="endereco" name="endereco" placeholder="Digite seu endereço" required>
+      <label>Itens do Pedido:</label>
+      <div id="itens-container" class="itens-container">
+        <div class="item-row">
+          <select onchange="atualizarPrecoTotal(this)">
+            <option value="">Selecione o produto</option>
+            <option value="Açaí Tradicional">🍧 Açaí Tradicional - R$ 20.00</option>
+            <option value="Açaí com Banana">🍌 Açaí com Banana - R$ 22.00</option>
+            <option value="Açaí com Morango">🍓 Açaí com Morango - R$ 23.00</option>
+            <option value="Açaí com Granola">🥣 Açaí com Granola - R$ 24.00</option>
+            <option value="Açaí com Leite Condensado">🥛 Açaí com Leite Condensado - R$ 25.00</option>
+            <option value="Açaí Tropical">🌴 Açaí Tropical - R$ 26.00</option>
+            <option value="Açaí Premium">💎 Açaí Premium - R$ 28.00</option>
+            <option value="Açaí Energético">⚡ Açaí Energético - R$ 27.00</option>
+            <option value="Açaí com Castanhas">🌰 Açaí com Castanhas - R$ 29.00</option>
+            <option value="Açaí com Mel">🍯 Açaí com Mel - R$ 26.00</option>
+            <option value="Açaí com Frutas Vermelhas">🍒 Açaí com Frutas Vermelhas - R$ 30.00</option>
+            <option value="Açaí com Kiwi">🥝 Açaí com Kiwi - R$ 28.00</option>
+            <option value="Açaí com Coco">🥥 Açaí com Coco - R$ 27.00</option>
+            <option value="Açaí com Abacaxi">🍍 Açaí com Abacaxi - R$ 25.00</option>
+            <option value="Açaí Mix Brasil">🇧🇷 Açaí Mix Brasil - R$ 32.00</option>
+          </select>
+          <select onchange="atualizarPrecoTotal(this)">
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+            <option value="6">6</option>
+            <option value="7">7</option>
+            <option value="8">8</option>
+            <option value="9">9</option>
+            <option value="10">10</option>
+          </select>
+          <input type="number" placeholder="Preço Total (R$)" step="0.01" readonly>
+        </div>
+      </div>
+      <div class="add-item">
+        <button type="button" onclick="adicionarItem()">Adicionar Item</button>
+      </div>
+      <label for="taxa">Taxa de Entrega (R$):</label>
+      <input type="number" id="taxa" name="taxa" value="4.00" class="taxa-fixa" readonly>
+      <label for="pagamento">Forma de Pagamento:</label>
+      <select id="pagamento" name="pagamento" required>
+        <option value="Dinheiro">Dinheiro</option>
+        <option value="Cartão de Crédito">Cartão de Crédito</option>
+        <option value="Cartão de Débito">Cartão de Débito</option>
+        <option value="PIX">PIX</option>
+      </select>
+      <label for="observacoes">Observações:</label>
+      <textarea id="observacoes" name="observacoes" placeholder="Digite suas observações" rows="4"></textarea>
+      <label for="total">Total:</label>
+      <input type="number" id="total" name="total" placeholder="Total do Pedido" readonly>
+      <button type="submit">Enviar Pedido</button>
+    </form>
+  </body>
+</html>
