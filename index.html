@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-  <head>
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pedido de Delivery</title>
@@ -27,7 +27,7 @@
         font-size: 32px;
         font-weight: bold;
         margin-bottom: 20px;
-        text-align: left;
+        text-align: center; /* Centraliza o texto */
       }
       label {
         font-weight: bold;
@@ -49,9 +49,15 @@
         display: flex;
         gap: 10px;
         padding: 10px;
+        border-bottom: 1px solid #ccc;
       }
       .item-row select, .item-row input {
         width: 32%;
+      }
+      .item-row button {
+        width: 32%; /* Mesma largura do botão "Adicionar Item" */
+        padding: 10px;
+        font-size: 16px;
       }
       .add-item {
         text-align: center;
@@ -76,6 +82,30 @@
       }
       button:hover {
         background: linear-gradient(135deg, #7a0eb0, #4b0082);
+      }
+      #opcao-entrega {
+        text-align: center;
+        margin-bottom: 15px;
+        display: flex;
+        gap: 2%;
+      }
+      /* Botões de Entrega/Retirada:         Estado não selecionado: fundo branco, texto e borda azul (#002a7b).         Estado selecionado: fundo azul (#002a7b) com texto branco.      */
+      #opcao-entrega button {
+        width: 45%;
+        padding: 10px;
+        font-size: 16px;
+        border: 1px solid #002a7b; /* Azul */
+        border-radius: 5px;
+        cursor: pointer;
+        color: #002a7b;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      }
+      #opcao-entrega #btn-entrega {
+        background-color: #FFFFFF; /* Branco */
+      }
+      #opcao-entrega #btn-retirada {
+        background-color: #7a0eb0; /* Roxo */
+        color: #FFFFFF; /* Branco */
       }
     </style>
     <script>
@@ -120,6 +150,7 @@
             <option value="10">10</option>
           </select>
           <input type="number" placeholder="Preço Total (R$)" step="0.01" readonly>
+          <button onclick="removerItem(this)">Remover</button>
         `;
         itensContainer.appendChild(novoItem);
       }
@@ -147,31 +178,104 @@
           total += precoTotal;
         }
         const taxaEntrega = parseFloat(document.getElementById("taxa").value) || 0;
-        const totalPedido = total + taxaEntrega;
+        const totalPedido = total + (opcaoEntrega === "entrega" ? taxaEntrega : 0); // Adiciona taxa se for entrega
         document.getElementById("total").value = totalPedido.toFixed(2);
       }
       // Função para enviar o pedido via WhatsApp
       function enviarPedido() {
         const nome = document.getElementById("nome").value;
         const endereco = document.getElementById("endereco").value;
+        const complemento = document.getElementById("complemento").value;
+        const pontoReferencia = document.getElementById("ponto-referencia").value;
         const taxa = document.getElementById("taxa").value;
         const pagamento = document.getElementById("pagamento").value;
         const total = document.getElementById("total").value;
         const observacoes = document.getElementById("observacoes").value;
         const itensContainer = document.getElementById("itens-container").children;
         let itens = "";
+        let temProdutoVazio = false;
+
+        // Verificar se o pedido está vazio
+        if (parseFloat(total) <= 4 || (opcaoEntrega === 'retirada' && parseFloat(total) === 0)) {
+          alert("Não é possível enviar o pedido vazio. Por favor, adicione pelo menos um item.");
+          return;
+        }
+
+        // Verificar se o nome, endereço e ponto de referência estão preenchidos
+        if (!nome || !endereco || !pontoReferencia) {
+          alert("Por favor, preencha os campos obrigatórios: Nome, Endereço de Entrega e Ponto de Referência.");
+          return;
+        }
+
+        // Verificar se há apenas um item vazio
+        if (itensContainer.length === 1 && itensContainer[0].children[0].value === "") {
+          alert("Não é possível enviar o pedido vazio. Por favor, adicione um item válido.");
+          return;
+        }
+
+        // Verificar se os itens do pedido estão preenchidos
         for (let i = 0; i < itensContainer.length; i++) {
           const item = itensContainer[i].children;
           const nomeItem = item[0].value;
+          if (nomeItem === "") {
+            temProdutoVazio = true;
+            break;
+          }
           const quantidade = item[1].value;
           const precoTotal = item[2].value;
           itens += `${produtos[nomeItem].emoji} ${nomeItem} x${quantidade} - R$ ${precoTotal}%0A`;
         }
-        const mensagem = `*Pedido de Delivery*%0A%0A📋 *Dados do Cliente:*%0A- Nome: ${nome}%0A- Endereço: ${endereco}%0A%0A📦 *Itens do Pedido:*%0A${itens}%0A%0A💵 *Forma de Pagamento:* ${pagamento}%0A🚚 *Taxa de Entrega:* R$ ${taxa}%0A🔴 *Total do Pedido:* R$ ${total}%0A%0A*Observações:* ${observacoes}`;
-        const telefone = "98981729088"; //Substitua pelo número correto
-        const url = `https://wa.me/55${telefone}?text=${mensagem}`;
-        window.open(url, "_blank");
+
+        if (temProdutoVazio) {
+          alert("Por favor, remova os itens vazios do pedido.");
+          return;
+        }
+
+        const mensagem = `*Pedido de Delivery*%0A%0A📋 *Dados do Cliente:*%0A- Nome: ${nome}%0A- Endereço: ${endereco}%0A`;
+        if (complemento) mensagem += `- Complemento: ${complemento}%0A`;
+        if (pontoReferencia) mensagem += `- Ponto de Referência: ${pontoReferencia}%0A`;
+
+        mensagem += `%0A📦 *Itens do Pedido:*%0A${itens}%0A%0A💵 *Forma de Pagamento:* ${pagamento}%0A`;
+
+        if (pagamento === 'PIX') {
+          mensagem += 'Chave Pix: renimarfilho000@gmail.com\n';
+        } else if (pagamento === 'Cartão de Crédito' || pagamento === 'Cartão de Débito') {
+          mensagem += 'Link para Pagamento: link.mercadopago.com.br/flowmize\n';
+        } 
+
+        mensagem += `🚚 *Taxa de Entrega:* R$ ${taxa}%0A🔴 *Total do Pedido:* R$ ${total}%0A%0A*Modo:* ${opcaoEntrega === "entrega" ? "Entrega" : "Retirada"}%0A%0A*Observações:* ${observacoes}`;
+
+        const telefone = "98981729088"; 
+        const url = `whatsapp://send?phone=+55${telefone}&text=${encodeURIComponent(mensagem)}`;
+        //window.open(url, "_blank");
+        window.location.href = url;
       }
+      let opcaoEntrega = "entrega";
+      function selecionarOpcao(opcao) {
+        opcaoEntrega = opcao;
+        // Desativa a cor do botão anterior (caso ele esteja roxo)
+        document.getElementById("btn-entrega").style.backgroundColor = "#FFFFFF"; // Branco
+        document.getElementById("btn-entrega").style.color = "#002a7b"; // Azul
+        document.getElementById("btn-retirada").style.backgroundColor = "#FFFFFF"; // Branco
+        document.getElementById("btn-retirada").style.color = "#002a7b"; // Azul
+
+        // Ativa a cor do botão selecionado
+        if (opcao === "entrega") {
+          document.getElementById("btn-entrega").style.backgroundColor = "#7a0eb0"; // Roxo
+          document.getElementById("btn-entrega").style.color = "#FFFFFF"; // Branco
+        } else {
+          document.getElementById("btn-retirada").style.backgroundColor = "#7a0eb0"; // Roxo
+          document.getElementById("btn-retirada").style.color = "#FFFFFF"; // Branco
+        }
+
+        calcularTotal(); // Atualiza o total do pedido
+      }
+      function removerItem(button) {
+        const itemRow = button.parentElement;
+        itemRow.remove();
+        calcularTotal();
+      }
+
     </script>
   </head>
   <body>
@@ -180,7 +284,11 @@
       <label for="nome">Nome do Cliente:</label>
       <input type="text" id="nome" name="nome" placeholder="Digite seu nome" required>
       <label for="endereco">Endereço de Entrega:</label>
-      <input type="text" id="endereco" name="endereco" placeholder="Digite seu endereço" required>
+      <input type="text" id="endereco" name="endereco" placeholder="Cidade, Bairro, Rua, Número" required>
+      <label for="complemento">Complemento (opcional):</label>
+      <input type="text" id="complemento" name="complemento" placeholder="Ex: Apto. 101">
+      <label for="ponto-referencia">Ponto de Referência:</label>
+      <input type="text" id="ponto-referencia" name="ponto-referencia" placeholder="Ex: Em frente a padaria, ao lado do banco" required>
       <label>Itens do Pedido:</label>
       <div id="itens-container" class="itens-container">
         <div class="item-row">
@@ -215,6 +323,7 @@
             <option value="10">10</option>
           </select>
           <input type="number" placeholder="Preço Total (R$)" step="0.01" readonly>
+          <button onclick="removerItem(this)">Remover</button>
         </div>
       </div>
       <div class="add-item">
@@ -231,9 +340,14 @@
       </select>
       <label for="observacoes">Observações:</label>
       <textarea id="observacoes" name="observacoes" placeholder="Digite suas observações" rows="4"></textarea>
+      <div id="opcao-entrega">
+        <button type="button" id="btn-entrega" onclick="selecionarOpcao('entrega')">Entrega</button>
+        <button type="button" id="btn-retirada" onclick="selecionarOpcao('retirada')">Retirada</button>
+      </div>
       <label for="total">Total:</label>
       <input type="number" id="total" name="total" placeholder="Total do Pedido" readonly>
       <button type="submit">Enviar Pedido</button>
     </form>
   </body>
-              </html>
+</html>
+
